@@ -5,19 +5,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner"; // Import toast from sonner
+import { StickyNoteList } from "components/sticky-notes/sticky-note-list"; // Import the list
 
-// Placeholder types - will be refined later
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type FigmaNode = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type GitLabLabel = any;
+import { FigmaStickyNote } from "types/figma";
+import { extractFileKey } from "@/lib/utils";
+
+// Placeholder type for GitLabLabel - replace with actual type when available
+interface GitLabLabel {
+  id: string;
+  name: string;
+  color: string;
+}
 
 export default function BridgePage() {
   const [figmaUrl, setFigmaUrl] = useState("");
   const [fileKey, setFileKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [stickyNotes, setStickyNotes] = useState<FigmaNode[]>([]);
+  const [stickyNotes, setStickyNotes] = useState<FigmaStickyNote[]>([]);
   const [selectedNotes, setSelectedNotes] = useState<string[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [gitlabLabels, setGitlabLabels] = useState<GitLabLabel[]>([]);
@@ -25,16 +30,16 @@ export default function BridgePage() {
   const [selectedGitlabLabels, setSelectedGitlabLabels] = useState<string[]>(
     []
   );
-  const { toast } = useToast();
 
   const extractFileKey = (url: string): string | null => {
     try {
       const urlParts = new URL(url);
       // Example URL: https://www.figma.com/file/FILE_KEY/File-Name?...
-      const match = urlParts.pathname.match(/\/file\/([^\/]+)/);
+      const match = urlParts.pathname.match(/file\/([a-zA-Z0-9_-]+)([/|?]|$)/);
       return match ? match[1] : null;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (e) {
+    } catch (e: any) {
+      // Suppress eslint error
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return null; // Invalid URL
     }
   };
@@ -42,15 +47,21 @@ export default function BridgePage() {
   const handleUrlChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newUrl = event.target.value;
     setFigmaUrl(newUrl);
-    setFileKey(extractFileKey(newUrl));
+    const extractedKey = extractFileKey(newUrl);
+    setFileKey(extractedKey);
+
+    if (!extractedKey && newUrl !== "") {
+      toast.error("Invalid FigJam URL", {
+        description: "Please enter a valid FigJam file URL.",
+      });
+    }
   };
 
   const fetchStickyNotes = async () => {
     if (!fileKey) {
-      toast({
-        title: "Invalid FigJam URL",
+      // Correct sonner usage: toast.error(title, { description })
+      toast.error("Invalid FigJam URL", {
         description: "Please enter a valid FigJam file URL.",
-        variant: "destructive",
       });
       return;
     }
@@ -69,30 +80,30 @@ export default function BridgePage() {
       const nodesData = await nodesResponse.json();
 
       // Extract sticky notes from the response
-      const notes = Object.values(nodesData.nodes || {});
+      const notes = Object.values(nodesData.nodes || {}) as FigmaStickyNote[];
       setStickyNotes(notes);
 
       if (notes.length === 0) {
-        toast({
-          title: "No Sticky Notes Found",
+        // Correct sonner usage: toast.info(title, { description })
+        toast.info("No Sticky Notes Found", {
           description:
             "No sticky notes were found in the specified FigJam file.",
         });
       } else {
-        toast({
-          title: "Sticky Notes Loaded",
+        // Correct sonner usage: toast.success(title, { description })
+        toast.success("Sticky Notes Loaded", {
           description: `${notes.length} sticky notes found.`,
         });
       }
-      // Use unknown for error type
-    } catch (error: unknown) {
+    } catch (error: any) {
+      // Suppress eslint error
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       console.error("Error fetching sticky notes:", error);
       const errorMessage =
         error instanceof Error ? error.message : "An unknown error occurred.";
-      toast({
-        title: "Error Loading Sticky Notes",
+      // Correct sonner usage: toast.error(title, { description })
+      toast.error("Error Loading Sticky Notes", {
         description: errorMessage,
-        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -110,6 +121,10 @@ export default function BridgePage() {
     // TODO: Implement bulk issue creation
     console.log("Creating issues for selected notes:", selectedNotes);
     console.log("With labels:", selectedGitlabLabels);
+  };
+
+  const handleSelectionChange = (selectedIds: string[]) => {
+    setSelectedNotes(selectedIds);
   };
 
   return (
@@ -147,13 +162,15 @@ export default function BridgePage() {
       {stickyNotes.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>2. Select Sticky Notes ({stickyNotes.length})</CardTitle>
+            <CardTitle>2. Select Sticky Notes</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">
-              Sticky note list will be displayed here.
-            </p>
-            {/* TODO: Implement StickyNoteList component */}
+            {/* Use the StickyNoteList component */}
+            <StickyNoteList
+              notes={stickyNotes}
+              selectedNotes={selectedNotes}
+              onSelectionChange={handleSelectionChange}
+            />
           </CardContent>
         </Card>
       )}

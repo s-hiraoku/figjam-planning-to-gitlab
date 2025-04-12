@@ -15,7 +15,9 @@ export function StickyNoteList({
   selectedNotes,
   onSelectionChange,
 }: StickyNoteListProps) {
-  const handleNoteToggle = (noteId: string) => {
+  const handleNoteToggle = (note: FigmaStickyNote) => {
+    const noteId = note.document?.id || note.id;
+    if (!noteId) return;
     const newSelection = selectedNotes.includes(noteId)
       ? selectedNotes.filter((id) => id !== noteId)
       : [...selectedNotes, noteId];
@@ -50,14 +52,17 @@ export function StickyNoteList({
         </p>
       ) : (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {notes.map((note) => (
-            <StickyNoteCard
-              key={note.id}
-              note={note}
-              isSelected={selectedNotes.includes(note.id)}
-              onSelectToggle={handleNoteToggle}
-            />
-          ))}
+          {notes.map((note, index) => {
+            const noteId = note.document?.id || note.id || index.toString();
+            return (
+              <StickyNoteCard
+                key={noteId}
+                note={note}
+                isSelected={selectedNotes.includes(noteId)}
+                onSelectToggle={() => handleNoteToggle(note)}
+              />
+            );
+          })}
         </div>
       )}
     </div>

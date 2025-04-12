@@ -30,29 +30,43 @@ export function StickyNoteCard({
   isSelected,
   onSelectToggle,
 }: StickyNoteCardProps) {
-  const noteText = note.characters || note.name || "No text";
-  const backgroundColor = figmaColorToHex(note.fills?.[0]?.color);
+  const noteText =
+    note.document?.characters ||
+    note.document?.name ||
+    note.characters ||
+    note.name ||
+    "No text";
+  // Use color from note.document if available, else fallback
+  const stickyColor =
+    note.document?.fills?.[0]?.color || note.fills?.[0]?.color;
+  const backgroundColor = figmaColorToHex(stickyColor) || "#FFEB3B"; // default yellow
 
-  // Basic contrast check for text color (simple version)
-  const isDarkBackground =
-    (note.fills?.[0]?.color?.r ?? 0) * 0.299 +
-      (note.fills?.[0]?.color?.g ?? 0) * 0.587 +
-      (note.fills?.[0]?.color?.b ?? 0) * 0.114 <
-    0.5;
-  const textColor = isDarkBackground ? "text-white" : "text-black";
-
+  // Robust contrast check for text color (black or white)
+  function getContrastYIQ({ r, g, b }: { r: number; g: number; b: number }) {
+    const yiq = (r * 255 * 299 + g * 255 * 587 + b * 255 * 114) / 1000;
+    return yiq >= 128 ? "text-black" : "text-white";
+  }
+  let textColor = "text-black";
+  if (stickyColor) {
+    textColor = getContrastYIQ(stickyColor);
+  }
   return (
     <Card
-      style={{ backgroundColor }}
+      style={{ backgroundColor, cursor: "pointer" }}
       className={`relative transition-opacity ${
         isSelected ? "opacity-100" : "opacity-70 hover:opacity-100"
       }`}
+      onClick={() => onSelectToggle(note.document?.id || note.id)}
+      tabIndex={0}
+      role="button"
+      aria-pressed={isSelected}
     >
       <Checkbox
         checked={isSelected}
-        onCheckedChange={() => onSelectToggle(note.id)}
+        onCheckedChange={() => onSelectToggle(note.document?.id || note.id)}
         className="absolute top-2 left-2 z-10 bg-white border-gray-400"
-        aria-label={`Select note ${note.id}`}
+        aria-label={`Select note ${note.document?.id || note.id}`}
+        onClick={(e) => e.stopPropagation()}
       />
       <CardContent className={`p-4 pt-8 ${textColor}`}>
         <p className="text-sm whitespace-pre-wrap break-words">{noteText}</p>

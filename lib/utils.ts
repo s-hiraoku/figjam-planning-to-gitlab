@@ -10,11 +10,12 @@ export function cn(...inputs: ClassValue[]) {
 export const extractFileKey = (url: string): string | null => {
   try {
     const urlParts = new URL(url);
-    // Example URL: https://www.figma.com/file/FILE_KEY/File-Name?...
-    const match = urlParts.pathname.match(/file\/([a-zA-Z0-9_-]+)([/|?]|$)/);
+    // Handle both /file/KEY and /board/KEY URLs
+    const match = urlParts.pathname.match(/\/(?:file|board)\/([a-zA-Z0-9_-]+)/);
     return match ? match[1] : null;
   } catch (e: any) {
     // Suppress eslint error
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return null; // Invalid URL
   }
 };

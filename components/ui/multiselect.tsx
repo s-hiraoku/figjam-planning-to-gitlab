@@ -93,9 +93,6 @@ export function MultiSelect({
                   />
                 )}
                 <span>{opt.label}</span>
-                {selected.includes(opt.value) && (
-                  <CheckIcon className="ml-auto size-4 text-primary" />
-                )}
               </label>
             ))}
           </div>

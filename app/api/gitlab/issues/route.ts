@@ -15,7 +15,7 @@ interface CreateIssueRequestBody {
 }
 
 const CREATE_ISSUE_MUTATION = `
-  mutation createIssue($projectPath: ID!, $title: String!, $description: String, $labelTitles: [String!]) {
+  mutation createIssue($projectPath: String!, $title: String!, $description: String, $labelTitles: [String!]) {
     createIssue(input: {projectPath: $projectPath, title: $title, description: $description, labelTitles: $labelTitles}) {
       issue {
         id
@@ -66,24 +66,27 @@ export async function POST(request: Request) {
   }
 
   const gitlabApiUrl = getGitlabApiUrl();
-  const projectGid = `gid://gitlab/Project/${projectId}`;
+  // Use project path (e.g., "namespace/project-name") for GraphQL API
+  const projectPath = projectId;
 
   try {
+    const payload = {
+      query: CREATE_ISSUE_MUTATION,
+      variables: {
+        projectPath: projectPath,
+        title: title,
+        description: description || "", // Ensure description is a string
+        labelTitles: labels || [], // Ensure labels is an array
+      },
+    };
+    console.log("GitLab GraphQL payload:", JSON.stringify(payload, null, 2));
     const response = await fetch(gitlabApiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${gitlabToken}`,
       },
-      body: JSON.stringify({
-        query: CREATE_ISSUE_MUTATION,
-        variables: {
-          projectPath: projectGid,
-          title: title,
-          description: description || "", // Ensure description is a string
-          labelTitles: labels || [], // Ensure labels is an array
-        },
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {

@@ -28,7 +28,7 @@ export function StickyNoteList({
     if (selectedNotes.length === notes.length) {
       onSelectionChange([]); // Deselect all
     } else {
-      onSelectionChange(notes.map((note) => note.id)); // Select all
+      onSelectionChange(notes.map((note) => note.document?.id || note.id)); // Select all
     }
   };
 

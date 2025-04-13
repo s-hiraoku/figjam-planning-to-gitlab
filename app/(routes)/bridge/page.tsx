@@ -9,6 +9,7 @@ import { toast } from "sonner"; // Import toast from sonner
 import { StickyNoteList } from "components/sticky-notes/sticky-note-list"; // Import the list
 import { MultiSelect } from "@/components/ui/multiselect"; // Added MultiSelect import
 import { FigmaStickyNote } from "types/figma";
+import { FigmaPreview } from "@/components/figma-viewer/FigmaPreview";
 
 // Placeholder type for GitLabLabel - replace with actual type when available
 interface GitLabLabel {
@@ -323,7 +324,7 @@ export default function BridgePage() {
           },
           body: JSON.stringify({
             title: noteText,
-            description: `Imported from FigJam (ID: ${noteId})`,
+            description: `Imported from FigJam: https://www.figma.com/file/${fileKey}?node-id=${noteId}`,
             labels: selectedGitlabLabels,
           }),
         });
@@ -395,6 +396,19 @@ export default function BridgePage() {
             {isLoading ? "Loading Notes..." : "Load Sticky Notes"}
           </Button>
         </CardContent>
+        {/* Figma Preview Accordion */}
+        {figmaUrl && !urlError && (
+          <div className="mb-4 px-6">
+            <details className="rounded border bg-white">
+              <summary className="cursor-pointer px-4 py-2 text-sm font-medium select-none">
+                Figma Preview (click to expand/collapse)
+              </summary>
+              <div className="p-2">
+                <FigmaPreview url={figmaUrl} />
+              </div>
+            </details>
+          </div>
+        )}
       </Card>
 
       {/* --- Filter UI --- */}

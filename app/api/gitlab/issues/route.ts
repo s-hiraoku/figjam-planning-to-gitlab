@@ -30,7 +30,7 @@ const CREATE_ISSUE_MUTATION = `
 
 export async function POST(request: Request) {
   const gitlabToken = process.env.GITLAB_ACCESS_TOKEN;
-  const projectId = process.env.GITLAB_PROJECT_ID;
+  const projectPath = process.env.GITLAB_PROJECT_PATH;
 
   if (!gitlabToken) {
     return NextResponse.json(
@@ -38,9 +38,9 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-  if (!projectId) {
+  if (!projectPath) {
     return NextResponse.json(
-      { error: "GitLab project ID is not configured" },
+      { error: "GitLab project path is not configured" },
       { status: 500 }
     );
   }
@@ -66,8 +66,6 @@ export async function POST(request: Request) {
   }
 
   const gitlabApiUrl = getGitlabApiUrl();
-
-  const projectPath = projectId;
 
   try {
     const payload = {

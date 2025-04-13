@@ -15,8 +15,8 @@ interface CreateIssueRequestBody {
 }
 
 const CREATE_ISSUE_MUTATION = `
-  mutation createIssue($projectPath: String!, $title: String!, $description: String, $labelTitles: [String!]) {
-    createIssue(input: {projectPath: $projectPath, title: $title, description: $description, labelTitles: $labelTitles}) {
+  mutation createIssue($projectPath: ID!, $title: String!, $description: String, $labelIds: [LabelID!]) {
+    createIssue(input: {projectPath: $projectPath, title: $title, description: $description, labelIds: $labelIds}) {
       issue {
         id
         iid
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { title, description, labels } = requestBody;
+  const { title, description } = requestBody;
 
   if (!title) {
     return NextResponse.json(
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
   }
 
   const gitlabApiUrl = getGitlabApiUrl();
-  // Use project path (e.g., "namespace/project-name") for GraphQL API
+
   const projectPath = projectId;
 
   try {
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
         projectPath: projectPath,
         title: title,
         description: description || "", // Ensure description is a string
-        labelTitles: labels || [], // Ensure labels is an array
+        labelIds: [], // ラベル未対応の場合は空配列
       },
     };
     console.log("GitLab GraphQL payload:", JSON.stringify(payload, null, 2));
@@ -84,31 +84,39 @@ export async function POST(request: Request) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Accept: "application/json",
         Authorization: `Bearer ${gitlabToken}`,
       },
       body: JSON.stringify(payload),
     });
 
+    const rawText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      data = null;
+    }
+    console.log("GitLab GraphQL response raw text:", rawText);
+    console.log("GitLab GraphQL response parsed JSON:", data);
+
     if (!response.ok) {
-      const errorData = await response.text();
       console.error(
         "GitLab API Error creating issue:",
         response.status,
-        errorData
+        rawText
       );
       return NextResponse.json(
         {
           error: `Failed to create GitLab issue: ${response.statusText}`,
-          details: errorData,
+          details: rawText,
         },
         { status: response.status }
       );
     }
 
-    const data = await response.json();
-
-    if (data.errors || data?.data?.createIssue?.errors?.length > 0) {
-      const errors = data.errors || data?.data?.createIssue?.errors;
+    if (data?.errors || data?.data?.createIssue?.errors?.length > 0) {
+      const errors = data?.errors || data?.data?.createIssue?.errors;
       console.error("GitLab GraphQL Errors creating issue:", errors);
       return NextResponse.json(
         { error: "GitLab GraphQL mutation returned errors", details: errors },

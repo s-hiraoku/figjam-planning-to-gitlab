@@ -42,3 +42,4 @@ next-env.d.ts
 
 # RooCode boomerang mode setting file
 .roomodes
+/firecrawl-mcp-server

@@ -1,6 +1,6 @@
 "use client"; // This component needs client-side interactivity
 
-import { useState, useMemo } from "react"; // Added useMemo
+import { useState, useMemo, useEffect } from "react"; // Added useMemo, useEffect
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,12 +25,18 @@ export default function BridgePage() {
   const [stickyNotes, setStickyNotes] = useState<FigmaStickyNote[]>([]);
   const [selectedNotes, setSelectedNotes] = useState<string[]>([]);
   const [urlError, setUrlError] = useState<string | null>(null); // State for URL error
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [gitlabLabels, setGitlabLabels] = useState<GitLabLabel[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [selectedGitlabLabels, setSelectedGitlabLabels] = useState<string[]>(
-    []
-  );
+  const [selectedGitlabLabelIds, setSelectedGitlabLabelIds] = useState<
+    string[]
+  >([]);
+
+  // Fetch labels when label selection UI is shown
+  useEffect(() => {
+    if (selectedNotes.length > 0 && gitlabLabels.length === 0) {
+      fetchGitlabLabels();
+    }
+  }, [selectedNotes.length, gitlabLabels.length]);
+
   // --- Filter state ---
   const [selectedSections, setSelectedSections] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
@@ -68,21 +74,7 @@ export default function BridgePage() {
       const color = note.document?.fills?.[0]?.color || note.fills?.[0]?.color;
       if (color) set.add(JSON.stringify(color));
     });
-    // 色のhex→日本語名マッピング
-    const colorNameMap: { [hex: string]: string } = {
-      "#FFEB3B": "黄色",
-      "#F44336": "赤",
-      "#2196F3": "青",
-      "#4CAF50": "緑",
-      "#FF9800": "オレンジ",
-      "#9C27B0": "紫",
-      "#E91E63": "ピンク",
-      "#795548": "茶色",
-      "#607D8B": "グレー",
-      "#FFFFFF": "白",
-      "#000000": "黒",
-    };
-    let options = Array.from(set).map((colorStr, i) => {
+    let options = Array.from(set).map((colorStr) => {
       const color = JSON.parse(colorStr);
       // Convert to hex for swatch
       const toHex = (c: number) =>
@@ -286,11 +278,18 @@ export default function BridgePage() {
     }
   };
 
-  // Placeholder for future functions
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // Fetch GitLab labels from REST API
   const fetchGitlabLabels = async () => {
-    // TODO: Implement GitLab label fetching
-    console.log("Fetching GitLab labels...");
+    try {
+      const res = await fetch("/api/gitlab/labels");
+      if (!res.ok) {
+        throw new Error("Failed to fetch GitLab labels");
+      }
+      const data = await res.json();
+      setGitlabLabels(data.labels || []);
+    } catch (error) {
+      console.error("Error fetching GitLab labels:", error);
+    }
   };
 
   const handleCreateIssues = async () => {
@@ -325,7 +324,7 @@ export default function BridgePage() {
           body: JSON.stringify({
             title: noteText,
             description: `Imported from FigJam: https://www.figma.com/file/${fileKey}?node-id=${noteId}`,
-            labels: selectedGitlabLabels,
+            labelIds: selectedGitlabLabelIds,
           }),
         });
 
@@ -361,6 +360,7 @@ export default function BridgePage() {
     <div className="container mx-auto p-4 md:p-8 space-y-8">
       <h1 className="text-3xl font-bold">FigJam to GitLab Bridge</h1>
 
+      {/* 1. Enter FigJam URL */}
       <Card>
         <CardHeader>
           <CardTitle>1. Enter FigJam URL</CardTitle>
@@ -411,67 +411,74 @@ export default function BridgePage() {
         )}
       </Card>
 
-      {/* --- Filter UI --- */}
-      {stickyNotes.length > 0 && (
-        <div className="flex flex-wrap gap-4 mb-4">
-          <div className="w-64">
-            <MultiSelect
-              options={sectionOptions}
-              selected={selectedSections}
-              onChange={setSelectedSections}
-              placeholder="セクションで絞り込み"
-              label="セクション"
-            />
-          </div>
-          <div className="w-64">
-            <MultiSelect
-              options={colorOptions}
-              selected={selectedColors}
-              onChange={setSelectedColors}
-              placeholder="色で絞り込み"
-              label="色"
-              showColorSwatch
-            />
-          </div>
-        </div>
-      )}
-      {/* Sticky Notes List */}
+      {/* 2. Filter & Select Sticky Notes */}
       {stickyNotes.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>2. Select Sticky Notes</CardTitle>
+            <CardTitle>2. Filter & Select Sticky Notes</CardTitle>
           </CardHeader>
           <CardContent>
+            {/* --- Filter UI --- */}
+            <div className="flex flex-wrap gap-4 mb-4">
+              <div className="w-64">
+                <MultiSelect
+                  options={sectionOptions}
+                  selected={selectedSections}
+                  onChange={setSelectedSections}
+                  placeholder="セクションで絞り込み"
+                  label="セクション"
+                />
+              </div>
+              <div className="w-64">
+                <MultiSelect
+                  options={colorOptions}
+                  selected={selectedColors}
+                  onChange={setSelectedColors}
+                  placeholder="色で絞り込み"
+                  label="色"
+                  showColorSwatch
+                />
+              </div>
+            </div>
+            {/* Sticky Notes List */}
             <StickyNoteList
               notes={filteredNotes} // Use filteredNotes
               selectedNotes={selectedNotes}
               onSelectionChange={handleSelectionChange}
             />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 3. Configure & Register Issues */}
+      {selectedNotes.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>3. Configure & Register Issues</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Confirmation/Preview */}
+            <p className="text-sm text-muted-foreground">
+              {selectedNotes.length} sticky note(s) selected.
+            </p>
+            {/* GitLab Label Selection */}
+            <MultiSelect
+              options={gitlabLabels.map((label) => ({
+                label: label.name,
+                value: label.id,
+              }))}
+              selected={selectedGitlabLabelIds}
+              onChange={setSelectedGitlabLabelIds}
+              placeholder="Select labels"
+              label="GitLab Labels"
+            />
+            {/* Register Button */}
             <Button
-              className="mt-4"
               onClick={handleCreateIssues}
               disabled={selectedNotes.length === 0}
               variant="default"
             >
               Register Selected as GitLab Issues
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Placeholder for GitLab Labels */}
-      {selectedNotes.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>3. Select GitLab Labels</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              GitLab label selection will be here.
-            </p>
-            {/* TODO: Implement GitLab label selector */}
-            <Button onClick={handleCreateIssues} className="mt-4">
-              Create {selectedNotes.length} GitLab Issues
             </Button>
           </CardContent>
         </Card>

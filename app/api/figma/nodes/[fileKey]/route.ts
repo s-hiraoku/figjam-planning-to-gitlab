@@ -134,6 +134,7 @@ export async function GET(
         result[stickyNode.id] = {
           document: stickyNode,
           sectionName: currentSectionName,
+          ...stickyNode, // Include the sticky note's properties in the result
         };
       }
       if (node.children && Array.isArray(node.children)) {

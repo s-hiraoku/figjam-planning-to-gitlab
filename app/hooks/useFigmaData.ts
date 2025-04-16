@@ -61,6 +61,7 @@ export function useFigmaData() {
         throw new Error(errorData.error || "Failed to fetch FigJam nodes");
       }
       const nodesData = await nodesResponse.json();
+      console.log("nodesData:", nodesData);
 
       // Extract sticky notes from the response
       const notes = Object.values(nodesData.nodes || {}) as FigmaStickyNote[];

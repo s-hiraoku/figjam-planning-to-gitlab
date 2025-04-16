@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
-import { FigmaStickyNote } from "types/figma";
+// FigmaStickyNote import is no longer needed here
+import { EditableIssueData } from "@/app/components/bridge/EditableIssueTable"; // Import the edited issue data type
 
 // Re-define or import GitLabLabel type
 interface GitLabLabel {
@@ -11,8 +12,7 @@ interface GitLabLabel {
 }
 
 export function useGitLabIntegration(
-  filteredNotes: FigmaStickyNote[],
-  selectedNotes: string[],
+  editedIssueData: EditableIssueData[], // Accept edited data directly
   fileKey: string | null // Pass fileKey needed for issue description
 ) {
   const [gitlabLabels, setGitlabLabels] = useState<GitLabLabel[]>([]);
@@ -45,9 +45,9 @@ export function useGitLabIntegration(
 
   // Handle creation of GitLab issues
   const handleCreateIssues = useCallback(async () => {
-    if (selectedNotes.length === 0) {
-      toast.error("No Sticky Notes Selected", {
-        description: "Please select at least one sticky note to register.",
+    if (editedIssueData.length === 0) {
+      toast.error("No Issues to Register", {
+        description: "No selected sticky notes are ready for registration.",
       });
       return;
     }
@@ -59,29 +59,28 @@ export function useGitLabIntegration(
     }
 
     setIsCreatingIssues(true);
-    const notesToRegister = filteredNotes.filter((note) =>
-      selectedNotes.includes(note.document?.id || note.id)
-    );
-
+    // No need to filter here, we already have the data to register
     let successCount = 0;
     let errorCount = 0;
 
-    for (const note of notesToRegister) {
+    for (const issue of editedIssueData) {
+      // Iterate over the edited data
       try {
-        const noteId = note.document?.id || note.id;
-        const noteText =
-          note.document?.characters ||
-          note.characters ||
-          "Untitled Sticky Note";
-
+        // Use data from the edited issue object
+        const noteId = issue.id;
+        const title = issue.title;
+        const description = issue.description;
         const res = await fetch("/api/gitlab/issues", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            title: noteText,
-            description: `Imported from FigJam: https://www.figma.com/file/${fileKey}?node-id=${noteId}`,
+            title: title, // Use edited title
+            description: `${description}\n\n---\n_Imported from FigJam: [${issue.originalText.substring(
+              0,
+              30
+            )}...](https://www.figma.com/file/${fileKey}?node-id=${noteId})_`, // Use edited description + link
             labelIds: selectedGitlabLabelIds,
           }),
         });
@@ -111,7 +110,7 @@ export function useGitLabIntegration(
         description: `${errorCount} issue(s) failed to create. Check console for details.`,
       });
     }
-  }, [selectedNotes, filteredNotes, fileKey, selectedGitlabLabelIds]);
+  }, [editedIssueData, fileKey, selectedGitlabLabelIds]); // Update dependencies
 
   return {
     gitlabLabels,

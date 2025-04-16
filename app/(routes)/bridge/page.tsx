@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-// Removed unused FigmaStickyNote import
+import { FigmaStickyNote } from "types/figma"; // Import the sticky note type
 
 // Import Hooks
 import { useFigmaData } from "@/app/hooks/useFigmaData";
@@ -14,11 +14,13 @@ import { FigmaUrlSection } from "@/app/components/bridge/FigmaUrlSection";
 import { StickyNoteFilterSection } from "@/app/components/bridge/StickyNoteFilterSection";
 import { StickyNoteSelectionSection } from "@/app/components/bridge/StickyNoteSelectionSection";
 import { GitLabConfigurationSection } from "@/app/components/bridge/GitLabConfigurationSection";
-
+import { EditableIssueData } from "@/app/components/bridge/EditableIssueTable"; // Import the editable issue type
 export default function BridgePage() {
   // --- State managed directly in the page ---
-  const [selectedNotes, setSelectedNotes] = useState<string[]>([]); // Shared between selection and GitLab sections
-
+  const [selectedNotes, setSelectedNotes] = useState<string[]>([]); // IDs of selected notes
+  const [editedIssueData, setEditedIssueData] = useState<EditableIssueData[]>(
+    []
+  ); // State to hold data from the editable table
   // --- Instantiate Hooks ---
   const {
     figmaUrl,
@@ -47,7 +49,7 @@ export default function BridgePage() {
     setSelectedGitlabLabelIds,
     handleCreateIssues,
     isCreatingIssues,
-  } = useGitLabIntegration(filteredNotes, selectedNotes, fileKey); // Pass necessary data to GitLab hook
+  } = useGitLabIntegration(editedIssueData, fileKey); // Pass edited data and fileKey to GitLab hook
 
   // --- Effects ---
   // Fetch labels when label selection UI is shown (first time notes are selected)
@@ -106,16 +108,25 @@ export default function BridgePage() {
       )}
 
       {/* 3. Configure & Register Issues */}
-      {selectedNotes.length > 0 && (
-        <GitLabConfigurationSection
-          gitlabLabels={gitlabLabels}
-          selectedGitlabLabelIds={selectedGitlabLabelIds}
-          onLabelChange={setSelectedGitlabLabelIds}
-          handleCreateIssues={handleCreateIssues}
-          isCreatingIssues={isCreatingIssues}
-          selectedNotesCount={selectedNotes.length}
-        />
-      )}
+      {selectedNotes.length > 0 &&
+        (() => {
+          // Find the actual sticky note objects corresponding to the selected IDs
+          const notesToRegister = filteredNotes.filter((note) =>
+            selectedNotes.includes(note.id)
+          );
+          return (
+            <GitLabConfigurationSection
+              initialNotes={notesToRegister} // Pass the full note objects
+              onIssueDataChange={setEditedIssueData} // Pass the setter for edited data
+              gitlabLabels={gitlabLabels}
+              selectedGitlabLabelIds={selectedGitlabLabelIds}
+              onLabelChange={setSelectedGitlabLabelIds}
+              handleCreateIssues={handleCreateIssues} // This will now use editedIssueData via the hook
+              isCreatingIssues={isCreatingIssues}
+              // selectedNotesCount prop is removed
+            />
+          );
+        })()}
     </div>
   );
 }

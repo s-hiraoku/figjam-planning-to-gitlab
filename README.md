@@ -1,24 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Figma-GitLab Integration
+
+This project integrates Figma and GitLab, allowing users to plan and manage projects using sticky notes in Figma and synchronize them with GitLab issues.
+
+## Features
+
+- **Figma Integration:** Fetch data from Figma, display Figma content, and select sticky notes.
+- **GitLab Integration:** Configure GitLab integration, create and manage GitLab issues, and use GitLab labels.
+- **Sticky Note Filtering:** Filter sticky notes based on certain criteria.
 
 ## Getting Started
 
-First, run the development server:
+1.  **Clone the repository:**
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+    ```bash
+    git clone <repository_url>
+    cd figjam-planning-to-gitlab
+    ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2.  **Install dependencies:**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+    ```bash
+    npm install
+    # or
+    yarn install
+    # or
+    pnpm install
+    # or
+    bun install
+    ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3.  **Run the development server:**
+
+    ```bash
+    npm run dev
+    # or
+    yarn dev
+    # or
+    pnpm dev
+    # or
+    bun dev
+    ```
+
+4.  **Open the application in your browser:**
+
+    Open [http://localhost:3000](http://localhost:3000) with your browser.
+
+## Configuration
+
+### Environment Variables
+
+Before running the application, you need to set the following environment variables in a `.env` file:
+
+- `GITLAB_ACCESS_TOKEN`: Your GitLab personal access token with `api` scope.
+- `GITLAB_PROJECT_PATH`: The path to your GitLab project (e.g., `your-group/your-project`).
+- `GITLAB_INSTANCE_URL` (optional): The URL of your GitLab instance. Defaults to `https://gitlab.com` if not provided.
+
+### GitLab Integration
+
+1.  Navigate to the "Bridge" page.
+2.  Enter your GitLab project ID and personal access token.
+3.  Click "Save Configuration".
+
+### Figma Integration
+
+1.  Enter your Figma file URL.
+
+## Usage
+
+1.  **Connect to Figma:** Enter your Figma file URL in the "Figma URL" section.
+2.  **Select Sticky Notes:** Select the sticky notes you want to synchronize with GitLab issues.
+3.  **Filter Sticky Notes:** Filter sticky notes based on labels or other criteria using the "Sticky Note Filter" section.
+4.  **Create/Manage GitLab Issues:** Create new GitLab issues from selected sticky notes or manage existing issues in the "Configure & Register Issues" section.
 
 ## Learn More
 

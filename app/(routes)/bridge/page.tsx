@@ -14,8 +14,9 @@ import { FigmaPreview } from "@/components/figma-viewer/FigmaPreview";
 // Placeholder type for GitLabLabel - replace with actual type when available
 interface GitLabLabel {
   id: string;
-  name: string;
+  title: string;
   color: string;
+  description: string;
 }
 
 export default function BridgePage() {
@@ -286,6 +287,8 @@ export default function BridgePage() {
         throw new Error("Failed to fetch GitLab labels");
       }
       const data = await res.json();
+      console.log("🚀 ~ fetchGitlabLabels ~ data:", data);
+
       setGitlabLabels(data.labels || []);
     } catch (error) {
       console.error("Error fetching GitLab labels:", error);
@@ -464,7 +467,7 @@ export default function BridgePage() {
             {/* GitLab Label Selection */}
             <MultiSelect
               options={gitlabLabels.map((label) => ({
-                label: label.name,
+                label: label.title,
                 value: label.id,
               }))}
               selected={selectedGitlabLabelIds}

@@ -26,7 +26,7 @@ const GET_LABELS_QUERY = `
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function GET(request: Request) {
   const gitlabToken = process.env.GITLAB_ACCESS_TOKEN;
-  const projectId = process.env.GITLAB_PROJECT_ID; // Using Project ID directly
+  const projectPath = process.env.GITLAB_PROJECT_PATH;
 
   if (!gitlabToken) {
     return NextResponse.json(
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-  if (!projectId) {
+  if (!projectPath) {
     return NextResponse.json(
       { error: "GitLab project ID is not configured" },
       { status: 500 }
@@ -44,10 +44,6 @@ export async function GET(request: Request) {
   const gitlabApiUrl = getGitlabApiUrl();
 
   try {
-    // Note: GitLab GraphQL uses Project ID (e.g., "gid://gitlab/Project/123") or full path
-    // We need to construct the GID from the Project ID
-    const projectGid = `gid://gitlab/Project/${projectId}`;
-
     const response = await fetch(gitlabApiUrl, {
       method: "POST",
       headers: {
@@ -56,7 +52,7 @@ export async function GET(request: Request) {
       },
       body: JSON.stringify({
         query: GET_LABELS_QUERY,
-        variables: { projectPath: projectGid }, // Use GID here
+        variables: { projectPath: projectPath }, // Use projectId directly as projectPath
       }),
     });
 
@@ -76,10 +72,18 @@ export async function GET(request: Request) {
       );
     }
 
-    const data = await response.json();
+    const rawText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      data = null;
+    }
+    console.log("GitLab Labels GraphQL response raw text:", rawText);
+    console.log("GitLab Labels GraphQL response parsed JSON:", data);
 
-    if (data.errors) {
-      console.error("GitLab GraphQL Errors:", data.errors);
+    if (data?.errors) {
+      console.error("GitLab GraphQL Errors fetching labels:", data.errors);
       return NextResponse.json(
         { error: "GitLab GraphQL query returned errors", details: data.errors },
         { status: 400 } // Or 500 depending on error type

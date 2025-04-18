@@ -9,6 +9,7 @@ import { useStickyNoteFilters } from "@/app/hooks/useStickyNoteFilters";
 import { useGitLabIntegration } from "@/app/hooks/useGitLabIntegration";
 
 // Import Components
+import { Button } from "@/components/ui/button";
 import { FigmaUrlSection } from "@/app/components/bridge/FigmaUrlSection";
 import { StickyNoteFilterSection } from "@/app/components/bridge/StickyNoteFilterSection";
 import { StickyNoteSelectionSection } from "@/app/components/bridge/StickyNoteSelectionSection";
@@ -20,6 +21,8 @@ export default function BridgePage() {
   const [editedIssueData, setEditedIssueData] = useState<EditableIssueData[]>(
     []
   ); // State to hold data from the editable table
+  const [showConfigSection, setShowConfigSection] = useState(false); // State to control visibility of section 3
+
   // --- Instantiate Hooks ---
   const {
     figmaUrl,
@@ -78,6 +81,7 @@ export default function BridgePage() {
         isLoading={isFigmaLoading}
         fileKey={fileKey}
         urlError={urlError}
+        disabled={true}
       />
 
       {/* 2. Filter & Select Sticky Notes */}
@@ -95,19 +99,33 @@ export default function BridgePage() {
               colorOptions={colorOptions}
               selectedColors={selectedColors}
               onColorChange={setSelectedColors}
+              disabled={true}
             />
             {/* Sticky Notes List */}
             <StickyNoteSelectionSection
               filteredNotes={filteredNotes} // Pass filtered notes to list
               selectedNotes={selectedNotes}
               onSelectionChange={handleSelectionChange}
+              disabled={true}
             />
+            {/* Next Button */}
+            <div className="flex justify-end mt-4">
+              <Button
+                disabled={selectedNotes.length === 0}
+                onClick={() => setShowConfigSection(true)}
+                type="button"
+                variant="default"
+              >
+                Configure Issues
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
 
       {/* 3. Configure & Register Issues */}
       {selectedNotes.length > 0 &&
+        showConfigSection &&
         (() => {
           // Find the actual sticky note objects corresponding to the selected IDs
           const notesToRegister = filteredNotes.filter((note) =>

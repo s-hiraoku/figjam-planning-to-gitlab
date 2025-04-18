@@ -62,24 +62,7 @@ export function EditableIssueTable({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Update the editedIssues state when initialNotes change (Hand-coded by　hiraoku)
-  useEffect(() => {
-    // Update the editedIssues state when initialNotes change
-    const updatedIssues = initialNotes.map((note) => {
-      const textContent = note.characters || note.name || "";
-      const lines = textContent.split("\\n");
-      const title = lines[0] || "Untitled Issue";
-      const description = lines.slice(1).join("\\n");
-      return {
-        id: note.id,
-        title: title,
-        description: description,
-        originalText: textContent,
-      };
-    });
-    setEditedIssues(updatedIssues);
-  }, [initialNotes, onIssueDataChange]);
-
+  // // Update the editedIssues state when initialNotes change (Hand-coded by　hiraoku)
   const handleCellClick = (
     rowIndex: number,
     colKey: keyof EditableIssueData

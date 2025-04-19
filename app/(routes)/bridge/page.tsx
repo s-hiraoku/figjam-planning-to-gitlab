@@ -64,6 +64,16 @@ export default function BridgePage() {
     // or if gitlabLabels changes (e.g., fetched successfully)
   }, [selectedNotes.length, gitlabLabels.length, fetchGitlabLabels]);
 
+  // Effect to scroll to the bottom when showConfigSection becomes true
+  useEffect(() => {
+    if (showConfigSection) {
+      window.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [showConfigSection]);
+
   // --- Event Handlers ---
   const handleSelectionChange = (selectedIds: string[]) => {
     setSelectedNotes(selectedIds);

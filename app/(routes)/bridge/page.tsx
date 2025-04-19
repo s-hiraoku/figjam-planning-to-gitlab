@@ -2,6 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 // Import Hooks
 import { useFigmaData } from "@/app/hooks/useFigmaData";
@@ -23,6 +30,7 @@ export default function BridgePage() {
   ); // State to hold data from the editable table
   const [showConfigSection, setShowConfigSection] = useState(false); // State to control visibility of section 3
   const [isEditMode, setIsEditMode] = useState(true); // State to control edit mode
+  const [showReselectModal, setShowReselectModal] = useState(false); // State to control visibility of reselect confirmation modal
 
   // --- Instantiate Hooks ---
   const {
@@ -84,9 +92,6 @@ export default function BridgePage() {
     <div className="container mx-auto p-4 md:p-8 space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">FigJam to GitLab Bridge</h1>
-        <Button variant="outline" onClick={() => setIsEditMode(!isEditMode)}>
-          {isEditMode ? "Lock Settings" : "Edit Settings"}
-        </Button>
       </div>
 
       {/* 1. Figma URL Section */}
@@ -151,18 +156,59 @@ export default function BridgePage() {
             selectedNotes.includes(note.id)
           );
           return (
-            <GitLabConfigurationSection
-              initialNotes={notesToRegister} // Pass the full note objects
-              onIssueDataChange={setEditedIssueData} // Pass the setter for edited data
-              gitlabLabels={gitlabLabels}
-              selectedGitlabLabelIds={selectedGitlabLabelIds}
-              onLabelChange={setSelectedGitlabLabelIds}
-              handleCreateIssues={handleCreateIssues} // This will now use editedIssueData via the hook
-              isCreatingIssues={isCreatingIssues}
-              // selectedNotesCount prop is removed
-            />
+            <>
+              <GitLabConfigurationSection
+                initialNotes={notesToRegister} // Pass the full note objects
+                onIssueDataChange={setEditedIssueData} // Pass the setter for edited data
+                gitlabLabels={gitlabLabels}
+                selectedGitlabLabelIds={selectedGitlabLabelIds}
+                onLabelChange={setSelectedGitlabLabelIds}
+                handleCreateIssues={handleCreateIssues} // This will now use editedIssueData via the hook
+                isCreatingIssues={isCreatingIssues}
+                // selectedNotesCount prop is removed
+              />
+              {/* Button to re-select sticky notes */}
+              <div className="flex justify-end mt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowReselectModal(true)}
+                >
+                  Reselect sticky notes
+                </Button>
+              </div>
+            </>
           );
         })()}
+
+      {/* Reselect Confirmation Modal */}
+      <Dialog open={showReselectModal} onOpenChange={setShowReselectModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Reselect</DialogTitle>
+          </DialogHeader>
+          <div>
+            Your current configuration for the selected sticky notes will be
+            lost. Are you sure you want to reselect?
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowReselectModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                setShowReselectModal(false);
+                setShowConfigSection(false);
+                setIsEditMode(true);
+              }}
+            >
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

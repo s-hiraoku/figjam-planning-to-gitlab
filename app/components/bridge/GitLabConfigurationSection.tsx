@@ -66,15 +66,17 @@ export function GitLabConfigurationSection({
           selectedGitlabLabelIds={selectedGitlabLabelIds}
         />
         {/* Register Button */}
-        <Button
-          onClick={handleCreateIssues}
-          disabled={initialNotes.length === 0 || isCreatingIssues} // Disable based on initialNotes length
-          variant="default"
-        >
-          {isCreatingIssues
-            ? "Registering Issues..."
-            : "Register Selected as GitLab Issues"}
-        </Button>
+        <div className="flex justify-end">
+          <Button
+            onClick={handleCreateIssues}
+            disabled={initialNotes.length === 0 || isCreatingIssues} // Disable based on initialNotes length
+            variant="default"
+          >
+            {isCreatingIssues
+              ? "Registering Issues..."
+              : "Register Selected as GitLab Issues"}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

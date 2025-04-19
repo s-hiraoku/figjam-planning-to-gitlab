@@ -12,6 +12,7 @@ interface FigmaUrlSectionProps {
   isLoading: boolean;
   fileKey: string | null;
   urlError: string | null;
+  isEditMode: boolean;
 }
 
 export function FigmaUrlSection({
@@ -21,6 +22,7 @@ export function FigmaUrlSection({
   isLoading,
   fileKey,
   urlError,
+  isEditMode,
 }: FigmaUrlSectionProps) {
   return (
     <Card>
@@ -36,7 +38,7 @@ export function FigmaUrlSection({
             placeholder="https://www.figma.com/file/..."
             value={figmaUrl}
             onChange={handleUrlChange}
-            disabled={isLoading}
+            disabled={!isEditMode || isLoading}
             aria-invalid={!!urlError}
             aria-describedby={urlError ? "figma-url-error" : undefined}
           />
@@ -53,7 +55,7 @@ export function FigmaUrlSection({
         </div>
         <Button
           onClick={fetchStickyNotes}
-          disabled={!fileKey || isLoading || !!urlError}
+          disabled={!isEditMode || !fileKey || isLoading || !!urlError}
         >
           {isLoading ? "Loading Notes..." : "Load Sticky Notes"}
         </Button>

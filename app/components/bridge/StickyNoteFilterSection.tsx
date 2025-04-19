@@ -15,6 +15,7 @@ interface StickyNoteFilterSectionProps {
   colorOptions: MultiSelectOption[];
   selectedColors: string[];
   onColorChange: (selected: string[]) => void;
+  isEditMode?: boolean;
 }
 
 export function StickyNoteFilterSection({
@@ -24,6 +25,7 @@ export function StickyNoteFilterSection({
   colorOptions,
   selectedColors,
   onColorChange,
+  isEditMode,
 }: StickyNoteFilterSectionProps) {
   return (
     <div className="flex flex-wrap gap-4 mb-4">
@@ -34,6 +36,7 @@ export function StickyNoteFilterSection({
           onChange={onSectionChange}
           placeholder="セクションで絞り込み"
           label="セクション"
+          disabled={!isEditMode}
         />
       </div>
       <div className="w-64">
@@ -44,6 +47,7 @@ export function StickyNoteFilterSection({
           placeholder="色で絞り込み"
           label="色"
           showColorSwatch // Assuming MultiSelect supports this prop
+          disabled={!isEditMode}
         />
       </div>
     </div>

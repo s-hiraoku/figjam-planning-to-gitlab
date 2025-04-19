@@ -7,6 +7,7 @@ interface StickyNoteCardProps {
   note: FigmaStickyNote;
   isSelected: boolean;
   onSelectToggle: (id: string) => void;
+  disabled?: boolean;
 }
 
 // Helper function to convert Figma color to CSS hex
@@ -29,6 +30,7 @@ export function StickyNoteCard({
   note,
   isSelected,
   onSelectToggle,
+  disabled,
 }: StickyNoteCardProps) {
   const noteText =
     note.document?.characters ||
@@ -52,11 +54,11 @@ export function StickyNoteCard({
   }
   return (
     <Card
-      style={{ backgroundColor, cursor: "pointer" }}
+      style={{ backgroundColor, cursor: disabled ? "not-allowed" : "pointer" }}
       className={`relative transition-opacity ${
         isSelected ? "opacity-100" : "opacity-70 hover:opacity-100"
-      }`}
-      onClick={() => onSelectToggle(note.document?.id || note.id)}
+      } ${disabled ? "opacity-50 grayscale" : ""}`}
+      onClick={() => !disabled && onSelectToggle(note.document?.id || note.id)}
       tabIndex={0}
       role="button"
       aria-pressed={isSelected}
@@ -67,6 +69,7 @@ export function StickyNoteCard({
         className="absolute top-2 left-2 z-10 bg-white border-gray-400"
         aria-label={`Select note ${note.document?.id || note.id}`}
         onClick={(e) => e.stopPropagation()}
+        disabled={disabled}
       />
       <CardContent className={`p-4 pt-8 ${textColor}`}>
         <p className="text-sm whitespace-pre-wrap break-words">{noteText}</p>

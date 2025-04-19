@@ -8,7 +8,7 @@ import {
 } from "@radix-ui/react-popover";
 import { Checkbox } from "./checkbox";
 import { Button } from "./button";
-import { CheckIcon, ChevronDownIcon } from "lucide-react";
+import { ChevronDownIcon } from "lucide-react";
 
 interface MultiSelectOption {
   label: string;
@@ -23,6 +23,7 @@ interface MultiSelectProps {
   placeholder?: string;
   label?: string;
   showColorSwatch?: boolean;
+  disabled?: boolean;
 }
 
 export function MultiSelect({
@@ -32,6 +33,7 @@ export function MultiSelect({
   placeholder = "Select...",
   label,
   showColorSwatch = false,
+  disabled,
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -60,6 +62,7 @@ export function MultiSelect({
             className="w-full justify-between"
             aria-haspopup="listbox"
             aria-expanded={open}
+            disabled={disabled}
           >
             <span className="truncate">
               {selectedLabels || (
@@ -85,6 +88,7 @@ export function MultiSelect({
                   onCheckedChange={() => handleToggle(opt.value)}
                   className="mr-2"
                   aria-label={opt.label}
+                  disabled={disabled}
                 />
                 {showColorSwatch && opt.color && (
                   <span

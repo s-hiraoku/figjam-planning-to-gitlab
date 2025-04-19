@@ -8,12 +8,14 @@ interface StickyNoteListProps {
   notes: FigmaStickyNote[];
   selectedNotes: string[];
   onSelectionChange: (selectedIds: string[]) => void;
+  disabled?: boolean;
 }
 
 export function StickyNoteList({
   notes,
   selectedNotes,
   onSelectionChange,
+  disabled,
 }: StickyNoteListProps) {
   const handleNoteToggle = (note: FigmaStickyNote) => {
     const noteId = note.document?.id || note.id;
@@ -39,7 +41,7 @@ export function StickyNoteList({
           id="select-all-notes"
           checked={notes.length > 0 && selectedNotes.length === notes.length}
           onCheckedChange={handleSelectAllToggle}
-          disabled={notes.length === 0}
+          disabled={notes.length === 0 || disabled}
         />
         <Label htmlFor="select-all-notes" className="ml-2">
           Select All ({selectedNotes.length} / {notes.length})
@@ -60,6 +62,7 @@ export function StickyNoteList({
                 note={note}
                 isSelected={selectedNotes.includes(noteId)}
                 onSelectToggle={() => handleNoteToggle(note)}
+                disabled={disabled}
               />
             );
           })}

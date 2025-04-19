@@ -22,6 +22,7 @@ export default function BridgePage() {
     []
   ); // State to hold data from the editable table
   const [showConfigSection, setShowConfigSection] = useState(false); // State to control visibility of section 3
+  const [isEditMode, setIsEditMode] = useState(true); // State to control edit mode
 
   // --- Instantiate Hooks ---
   const {
@@ -71,7 +72,12 @@ export default function BridgePage() {
   // --- Render Logic ---
   return (
     <div className="container mx-auto p-4 md:p-8 space-y-8">
-      <h1 className="text-3xl font-bold">FigJam to GitLab Bridge</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">FigJam to GitLab Bridge</h1>
+        <Button variant="outline" onClick={() => setIsEditMode(!isEditMode)}>
+          {isEditMode ? "Lock Settings" : "Edit Settings"}
+        </Button>
+      </div>
 
       {/* 1. Figma URL Section */}
       <FigmaUrlSection
@@ -81,7 +87,7 @@ export default function BridgePage() {
         isLoading={isFigmaLoading}
         fileKey={fileKey}
         urlError={urlError}
-        disabled={true}
+        isEditMode={isEditMode}
       />
 
       {/* 2. Filter & Select Sticky Notes */}
@@ -99,20 +105,23 @@ export default function BridgePage() {
               colorOptions={colorOptions}
               selectedColors={selectedColors}
               onColorChange={setSelectedColors}
-              disabled={true}
+              isEditMode={isEditMode}
             />
             {/* Sticky Notes List */}
             <StickyNoteSelectionSection
               filteredNotes={filteredNotes} // Pass filtered notes to list
               selectedNotes={selectedNotes}
               onSelectionChange={handleSelectionChange}
-              disabled={true}
+              isEditMode={isEditMode}
             />
             {/* Next Button */}
             <div className="flex justify-end mt-4">
               <Button
-                disabled={selectedNotes.length === 0}
-                onClick={() => setShowConfigSection(true)}
+                disabled={selectedNotes.length === 0 || !isEditMode}
+                onClick={() => {
+                  setShowConfigSection(true);
+                  setIsEditMode(false);
+                }}
                 type="button"
                 variant="default"
               >

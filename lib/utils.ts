@@ -11,11 +11,14 @@ export const extractFileKey = (url: string): string | null => {
   try {
     const urlParts = new URL(url);
     // Handle both /file/KEY and /board/KEY URLs
-    const match = urlParts.pathname.match(/\/(?:file|board)\/([a-zA-Z0-9_-]+)/);
+    // Match /file/KEY or /board/KEY only at the start of the path
+    const match = urlParts.pathname.match(
+      /^\/(?:file|board)\/([a-zA-Z0-9_-]+)/
+    );
     return match ? match[1] : null;
-  } catch (e: any) {
-    // Suppress eslint error
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_e: unknown) {
+    // Use unknown type and prefix unused variable
     return null; // Invalid URL
   }
 };

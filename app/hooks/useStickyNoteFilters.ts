@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { FigmaStickyNote } from "types/figma";
+import type { FigmaStickyNote } from "types/figma";
 
 // Helper function to convert Figma color to hex
 const figmaColorToHex = (color: {
@@ -14,40 +14,39 @@ const figmaColorToHex = (color: {
   return `#${toHex(color.r)}${toHex(color.g)}${toHex(color.b)}`;
 };
 
-// Helper function to get closest color name (extracted from original component)
-const getClosestColorName = (hex: string): string => {
-  const colorRefList = [
-    { hex: "#ffffff", name: "白", rgb: [255, 255, 255] },
-    { hex: "#e6e6e6", name: "灰色", rgb: [230, 230, 230] },
-    { hex: "#ffd3a8", name: "オレンジ", rgb: [255, 211, 168] },
-    { hex: "#fffa3a", name: "黄色", rgb: [255, 250, 58] },
-    { hex: "#b3efbd", name: "緑", rgb: [179, 239, 189] },
-    { hex: "#b3f4ef", name: "青緑", rgb: [179, 244, 239] },
-    { hex: "#a8d3ff", name: "青", rgb: [168, 211, 255] },
-    { hex: "#ffb3b3", name: "赤", rgb: [255, 179, 179] },
-  ];
-  const hexToRgb = (h: string): [number, number, number] => {
-    const hexClean = h.replace("#", "");
-    return [
-      parseInt(hexClean.substring(0, 2), 16),
-      parseInt(hexClean.substring(2, 4), 16),
-      parseInt(hexClean.substring(4, 6), 16),
-    ];
-  };
-  const rgb = hexToRgb(hex.toLowerCase());
-  let minDist = Infinity;
-  let closest = colorRefList[0];
-  for (const ref of colorRefList) {
-    const dist =
-      Math.pow(rgb[0] - ref.rgb[0], 2) +
-      Math.pow(rgb[1] - ref.rgb[1], 2) +
-      Math.pow(rgb[2] - ref.rgb[2], 2);
-    if (dist < minDist) {
-      minDist = dist;
-      closest = ref;
-    }
-  }
-  return closest.name;
+// Standard FigJam colors with Japanese labels
+const STANDARD_COLOR_LABELS: { [key: string]: string } = {
+  "#ffc700": "黄色", // Yellow - Standard FigJam Yellow
+  "#1abcfe": "青", // Blue - Standard FigJam Blue
+  "#f24822": "赤", // Red - Standard FigJam Red
+  "#0acf83": "緑", // Green - Standard FigJam Green
+  "#7b61ff": "紫", // Purple - Standard FigJam Purple
+  "#ff72a6": "ピンク", // Pink - Standard FigJam Pink
+  "#808080": "灰色", // Gray - Standard FigJam Gray
+  "#ffffff": "白", // White - Standard FigJam White
+  "#a8daff": "青", // Blue - New Standard
+  "#d3bdff": "紫", // Purple - New Standard
+  "#ffa8db": "ピンク", // Pink - New Standard
+  "#ffafa3": "赤", // Red - New Standard
+  "#ffe299": "黄色", // Yellow - New Standard
+};
+
+// Known legacy colors with Japanese labels
+const LEGACY_COLOR_LABELS: { [key: string]: string } = {
+  "#e6e6e6": "グレー", // Gray (Legacy) -> Updated Label
+  "#ffd3a8": "オレンジ", // Orange (Legacy) -> Updated Label
+  "#fffa3a": "黄色 (旧)", // Yellow (Legacy) - Unchanged
+  "#b3efbd": "緑", // Green (Legacy) -> Updated Label
+  "#b3f4ef": "青緑", // Teal (Legacy) -> Updated Label
+  "#a8d3ff": "青 (旧)", // Blue (Legacy) - Unchanged (Note: #a8daff is the new standard Blue)
+  "#ffb3b3": "赤 (旧)", // Red (Legacy) - Unchanged
+  "#75d7f0": "水色（旧）", // Light Blue (Legacy) - New Legacy
+  "#80caff": "青（旧）", // Blue (Legacy) - New Legacy
+  "#85e0a3": "緑（旧）", // Green (Legacy) - New Legacy
+  "#afbccf": "グレー (旧)", // Gray (Legacy) - New Legacy
+  "#ffbdf2": "ピンク（旧）", // Pink (Legacy) - New Legacy
+  "#ffc470": "オレンジ（旧）", // Orange (Legacy) - New Legacy
+  "#ffd966": "黄色（旧）", // Yellow (Legacy) - New Legacy
 };
 
 export function useStickyNoteFilters(stickyNotes: FigmaStickyNote[]) {
@@ -60,8 +59,7 @@ export function useStickyNoteFilters(stickyNotes: FigmaStickyNote[]) {
       stickyNotes.map(
         (note) =>
           note.document?.sectionName ||
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (note as any).sectionName || // Keep potential fallback
+          note.sectionName || // Access directly if available
           defaultSectionName
       )
     );
@@ -82,55 +80,36 @@ export function useStickyNoteFilters(stickyNotes: FigmaStickyNote[]) {
 
   const colorOptions = useMemo(() => {
     const colorSet = new Set<string>();
-    stickyNotes.forEach((note) => {
+    for (const note of stickyNotes) {
       const color = note.document?.fills?.[0]?.color || note.fills?.[0]?.color;
-      if (color) colorSet.add(JSON.stringify(color));
-    });
+      if (color) {
+        colorSet.add(JSON.stringify(color));
+      }
+    }
 
-    let options = Array.from(colorSet).map((colorStr) => {
+    const options = Array.from(colorSet).map((colorStr) => {
       const color = JSON.parse(colorStr);
       const hex = figmaColorToHex(color);
-      const colorLabelMap: { [hex: string]: string } = {
-        "#ffffff": "白",
-        "#e6e6e6": "灰色",
-        "#ffd3a8": "オレンジ",
-        "#fffa3a": "黄色",
-        "#b3efbd": "緑",
-        "#b3f4ef": "青緑",
-        "#a8d3ff": "青",
-        "#ffb3b3": "赤",
-      };
+      const lowerHex = hex.toLowerCase();
 
-      let jpName = colorLabelMap[hex.toLowerCase()];
-      if (!jpName) {
-        const closest = getClosestColorName(hex);
-        // Apply specific overrides based on closest match or hex
-        if (closest === "灰色") jpName = "ピンク（OLD）";
-        else if (closest === "赤") jpName = "赤";
-        else if (hex.toLowerCase() === "#a8d3ff" || closest === "青")
-          jpName = "青";
-        else jpName = closest + "（OLD）";
+      let label = STANDARD_COLOR_LABELS[lowerHex];
+      if (!label) {
+        label = LEGACY_COLOR_LABELS[lowerHex];
+      }
+      if (!label) {
+        label = `不明 (${hex})`; // Label for unknown colors
       }
 
       return {
-        label: jpName,
-        value: hex,
-        color: hex,
+        label: label,
+        value: hex, // Keep original hex casing for value if needed, though filtering uses lowercase
+        // color: hex, // Removed as it's redundant with value and not used downstream
       };
     });
 
-    // Apply index-based overrides (maintain original logic)
-    const labelOverrides: { [idx: number]: string } = {
-      4: "黄色",
-      8: "紫",
-      9: "ピンク",
-      10: "グレー（OLD）",
-      12: "水色（OLD）",
-      14: "青（OLD）",
-    };
-    options = options.map((opt, i) =>
-      labelOverrides[i] ? { ...opt, label: labelOverrides[i] } : opt
-    );
+    // Sort options for consistent display order (optional, but good practice)
+    // Example: Sort by label
+    options.sort((a, b) => a.label.localeCompare(b.label, "ja"));
 
     return options;
   }, [stickyNotes]);
@@ -141,8 +120,7 @@ export function useStickyNoteFilters(stickyNotes: FigmaStickyNote[]) {
       const defaultSectionName = "セクションなし";
       const section =
         note.document?.sectionName ||
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (note as any).sectionName ||
+        note.sectionName || // Access directly if available
         defaultSectionName;
       if (selectedSections.length > 0 && !selectedSections.includes(section)) {
         return false;

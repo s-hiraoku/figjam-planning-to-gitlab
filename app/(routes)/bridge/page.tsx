@@ -21,10 +21,10 @@ import { FigmaUrlSection } from "@/app/components/bridge/FigmaUrlSection";
 import { StickyNoteFilterSection } from "@/app/components/bridge/StickyNoteFilterSection";
 import { StickyNoteSelectionSection } from "@/app/components/bridge/StickyNoteSelectionSection";
 import { GitLabConfigurationSection } from "@/app/components/bridge/GitLabConfigurationSection";
-import { EditableIssueData } from "@/app/components/bridge/EditableIssueTable"; // Import the editable issue type
+import type { EditableIssueData } from "@/app/components/bridge/EditableIssueTable"; // Import the editable issue type
 export default function BridgePage() {
   // --- State managed directly in the page ---
-  const [selectedNotes, setSelectedNotes] = useState<string[]>([]); // IDs of selected notes
+  const [selectedNotes, setSelectedNotes] = useState<Set<string>>(new Set()); // IDs of selected notes
   const [editedIssueData, setEditedIssueData] = useState<EditableIssueData[]>(
     []
   ); // State to hold data from the editable table
@@ -65,12 +65,12 @@ export default function BridgePage() {
   // --- Effects ---
   // Fetch labels when label selection UI is shown (first time notes are selected)
   useEffect(() => {
-    if (selectedNotes.length > 0 && gitlabLabels.length === 0) {
+    if (selectedNotes.size > 0 && gitlabLabels.length === 0) {
       fetchGitlabLabels();
     }
     // Dependency array ensures this runs only when selectedNotes transitions from 0 to >0,
     // or if gitlabLabels changes (e.g., fetched successfully)
-  }, [selectedNotes.length, gitlabLabels.length, fetchGitlabLabels]);
+  }, [selectedNotes.size, gitlabLabels.length, fetchGitlabLabels]);
 
   // Effect to scroll to the bottom when showConfigSection becomes true
   useEffect(() => {
@@ -83,8 +83,30 @@ export default function BridgePage() {
   }, [showConfigSection]);
 
   // --- Event Handlers ---
-  const handleSelectionChange = (selectedIds: string[]) => {
-    setSelectedNotes(selectedIds);
+  const handleSelectionChange = (selectedIds: Set<string>) => {
+    // Convert selected note IDs to lowercase for consistent color casing
+    const lowerCaseSelectedIds = new Set(
+      Array.from(selectedIds).map((id) => id.toLowerCase())
+    );
+    setSelectedNotes(lowerCaseSelectedIds);
+  };
+
+  const handleConfigureIssues = () => {
+    const initialIssues = filteredNotes
+      .filter((note) => selectedNotes.has(note.id))
+      .map((note) => ({
+        id: note.id,
+        title: (note.text || "").split("\n")[0] || "Untitled Issue",
+        description:
+          (note.text || "").substring((note.text || "").indexOf("\n") + 1) || "",
+        originalText: note.text || "",
+        labels: [],
+        assignees: [],
+        milestone: null,
+      }));
+    setEditedIssueData(initialIssues);
+    setShowConfigSection(true);
+    setIsEditMode(false);
   };
 
   // --- Render Logic ---
@@ -132,11 +154,8 @@ export default function BridgePage() {
             {/* Next Button */}
             <div className="flex justify-end mt-4">
               <Button
-                disabled={selectedNotes.length === 0 || !isEditMode}
-                onClick={() => {
-                  setShowConfigSection(true);
-                  setIsEditMode(false);
-                }}
+                disabled={selectedNotes.size === 0 || !isEditMode}
+                onClick={handleConfigureIssues}
                 type="button"
                 variant="default"
               >
@@ -148,12 +167,12 @@ export default function BridgePage() {
       )}
 
       {/* 3. Configure & Register Issues */}
-      {selectedNotes.length > 0 &&
+      {selectedNotes.size > 0 &&
         showConfigSection &&
         (() => {
           // Find the actual sticky note objects corresponding to the selected IDs
           const notesToRegister = filteredNotes.filter((note) =>
-            selectedNotes.includes(note.id)
+            selectedNotes.has(note.id)
           );
           return (
             <>

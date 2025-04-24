@@ -1,13 +1,12 @@
-import React from "react";
+import React, { useRef, useCallback, useState, useEffect } from "react";
 import { StickyNoteCard } from "./sticky-note-card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { FigmaStickyNote } from "types/figma";
+import type { FigmaStickyNote } from "types/figma";
 
 interface StickyNoteListProps {
   notes: FigmaStickyNote[];
-  selectedNotes: string[];
-  onSelectionChange: (selectedIds: string[]) => void;
+  selectedNotes: Set<string>;
+  onSelectionChange: (selectedIds: Set<string>) => void;
   disabled?: boolean;
 }
 
@@ -20,33 +19,48 @@ export function StickyNoteList({
   const handleNoteToggle = (note: FigmaStickyNote) => {
     const noteId = note.document?.id || note.id;
     if (!noteId) return;
-    const newSelection = selectedNotes.includes(noteId)
-      ? selectedNotes.filter((id) => id !== noteId)
-      : [...selectedNotes, noteId];
+    const newSelection = new Set(selectedNotes); // Create a new Set instance
+    if (newSelection.has(noteId)) {
+      newSelection.delete(noteId);
+    } else {
+      newSelection.add(noteId);
+    }
     onSelectionChange(newSelection);
   };
 
-  const handleSelectAllToggle = () => {
-    if (selectedNotes.length === notes.length) {
-      onSelectionChange([]); // Deselect all
-    } else {
-      onSelectionChange(notes.map((note) => note.document?.id || note.id)); // Select all
-    }
-  };
+  const isAllSelected = React.useMemo(() => {
+    return notes.length > 0 && selectedNotes.size === notes.length;
+  }, [notes.length, selectedNotes.size]);
+
+  // Local state to manage the checkbox checked status
+
+  // Ref to track if the change originated from the local checkbox handler
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center">
-        <Checkbox
-          id="select-all-notes"
-          checked={notes.length > 0 && selectedNotes.length === notes.length}
-          onCheckedChange={handleSelectAllToggle}
-          disabled={notes.length === 0 || disabled}
-        />
-        <Label htmlFor="select-all-notes" className="ml-2">
-          Select All ({selectedNotes.length} / {notes.length})
-        </Label>
-      </div>
+      <button
+        type="button"
+        className={`flex items-center px-2 py-1 border rounded ${
+          isAllSelected ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-800"
+        } ${
+          notes.length === 0 || disabled ? "opacity-50 cursor-not-allowed" : ""
+        }`}
+        onClick={() => {
+          if (notes.length === 0 || disabled) return;
+          const nextSelection = isAllSelected
+            ? new Set<string>()
+            : new Set(
+                notes
+                  .map((note) => note.document?.id || note.id)
+                  .filter((id): id is string => id !== undefined)
+              );
+          onSelectionChange(nextSelection);
+        }}
+        disabled={notes.length === 0 || disabled}
+      >
+        {isAllSelected ? "Deselect All" : "Select All"} ({selectedNotes.size} /{" "}
+        {notes.length})
+      </button>
 
       {notes.length === 0 ? (
         <p className="text-muted-foreground text-center py-4">
@@ -60,7 +74,7 @@ export function StickyNoteList({
               <StickyNoteCard
                 key={noteId}
                 note={note}
-                isSelected={selectedNotes.includes(noteId)}
+                isSelected={selectedNotes.has(noteId)}
                 onSelectToggle={() => handleNoteToggle(note)}
                 disabled={disabled}
               />

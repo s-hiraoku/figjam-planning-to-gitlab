@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { GitLabLabel } from "./GitLabConfigurationSection";
-import { FigmaStickyNote } from "types/figma";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import type { GitLabLabel } from "./GitLabConfigurationSection";
+import type { FigmaStickyNote } from "types/figma";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -25,6 +25,21 @@ interface EditableIssueTableProps {
   onIssueDataChange: (updatedIssues: EditableIssueData[]) => void;
   gitlabLabels: GitLabLabel[];
   selectedGitlabLabelIds: string[];
+}
+
+// Simple debounce function - using Function type as a broad base
+function debounce<F extends (...args: Parameters<F>) => ReturnType<F>>(
+  func: F,
+  waitFor: number
+) {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  return (...args: Parameters<F>): void => {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = setTimeout(() => func(...args), waitFor);
+  };
 }
 
 export function EditableIssueTable({
@@ -56,82 +71,167 @@ export function EditableIssueTable({
   const [editedIssues, setEditedIssues] =
     useState<EditableIssueData[]>(initialIssueData);
 
-  // Update parent of initial state
-  useEffect(() => {
-    onIssueDataChange(initialIssueData);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Debounce the callback to the parent
+  const debouncedOnIssueDataChange = useMemo(
+    () => debounce(onIssueDataChange, 300),
+    [onIssueDataChange]
+  );
 
   // // Update the editedIssues state when initialNotes change (Hand-coded by　hiraoku)
-  const handleCellClick = (
-    rowIndex: number,
-    colKey: keyof EditableIssueData
-  ) => {
-    if (colKey === "title" || colKey === "description") {
-      setEditingCell({ rowIndex, colKey });
-    }
-  };
-
-  const handleInputChange = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-    rowIndex: number,
-    colKey: keyof EditableIssueData
-  ) => {
-    const updatedIssues = editedIssues.map((issue, index) => {
-      if (index === rowIndex) {
-        return { ...issue, [colKey]: event.target.value };
+  const handleCellClick = useCallback(
+    (rowIndex: number, colKey: keyof EditableIssueData) => {
+      if (colKey === "title" || colKey === "description") {
+        setEditingCell({ rowIndex, colKey });
       }
-      return issue;
-    });
-    setEditedIssues(updatedIssues);
-    // Debounced update could be added here if needed
-    onIssueDataChange(updatedIssues); // Notify parent immediately for now
-  };
+    },
+    []
+  );
 
-  const handleInputBlur = () => {
+  const handleInputChange = useCallback(
+    (
+      event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+      rowIndex: number,
+      colKey: keyof EditableIssueData
+    ) => {
+      const newValue = event.target.value;
+      // Use functional update for efficiency
+      setEditedIssues((prevIssues) => {
+        const updatedIssues = [...prevIssues]; // Create a mutable copy
+        // Ensure the row exists before trying to update
+        if (updatedIssues[rowIndex]) {
+          updatedIssues[rowIndex] = {
+            ...updatedIssues[rowIndex],
+            [colKey]: newValue,
+          };
+        }
+        // Call the debounced function with the latest state
+        debouncedOnIssueDataChange(updatedIssues);
+        return updatedIssues; // Return the new state
+      });
+    },
+    [debouncedOnIssueDataChange] // Dependency for useCallback
+  );
+
+  const handleInputBlur = useCallback(() => {
     setEditingCell(null);
     // Potentially trigger final validation or save action here if needed
-  };
+  }, []);
 
-  const renderCellContent = (
-    issue: EditableIssueData,
-    rowIndex: number,
-    colKey: keyof EditableIssueData
-  ) => {
-    if (editingCell?.rowIndex === rowIndex && editingCell?.colKey === colKey) {
-      if (colKey === "description") {
-        return (
-          <Textarea
-            value={issue[colKey]}
-            onChange={(e) => handleInputChange(e, rowIndex, colKey)}
-            onBlur={handleInputBlur}
-            autoFocus
-            className="w-full h-24" // Adjust size as needed
-          />
-        );
-      } else {
-        // title
-        return (
-          <Input
-            type="text"
-            value={issue[colKey]}
-            onChange={(e) => handleInputChange(e, rowIndex, colKey)}
-            onBlur={handleInputBlur}
-            autoFocus
-            className="w-full"
-          />
-        );
-      }
+  // Memoize the label lookup map
+  const gitlabLabelMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const label of gitlabLabels) {
+      // Use for...of loop
+      map.set(label.id, label.title);
     }
-    // Display newline characters correctly in non-editing mode for description
-    return colKey === "description" ? (
-      <pre className="whitespace-pre-wrap text-sm">
-        {issue[colKey] || "(empty)"}
-      </pre>
-    ) : (
-      issue[colKey] || "(empty)"
-    );
-  };
+    return map;
+  }, [gitlabLabels]);
+
+  // Memoized Row Component
+  const MemoizedTableRow = React.memo(
+    ({
+      issue,
+      rowIndex,
+      editingCell,
+      gitlabLabelMap,
+      selectedGitlabLabelIds,
+      handleCellClick,
+      handleInputChange,
+      handleInputBlur,
+    }: {
+      issue: EditableIssueData;
+      rowIndex: number;
+      editingCell: { rowIndex: number; colKey: keyof EditableIssueData } | null;
+      gitlabLabelMap: Map<string, string>;
+      selectedGitlabLabelIds: string[];
+      handleCellClick: (
+        rowIndex: number,
+        colKey: keyof EditableIssueData
+      ) => void;
+      handleInputChange: (
+        event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+        rowIndex: number,
+        colKey: keyof EditableIssueData
+      ) => void;
+      handleInputBlur: () => void;
+    }) => {
+      const renderCellContent = (
+        issue: EditableIssueData,
+        rowIndex: number,
+        colKey: keyof EditableIssueData
+      ) => {
+        if (
+          editingCell?.rowIndex === rowIndex &&
+          editingCell?.colKey === colKey
+        ) {
+          if (colKey === "description") {
+            return (
+              <Textarea
+                value={issue[colKey]}
+                onChange={(e) => handleInputChange(e, rowIndex, colKey)}
+                onBlur={handleInputBlur}
+                autoFocus
+                className="w-full h-24" // Adjust size as needed
+              />
+            );
+          }
+          // title (No else needed as previous branch returns)
+          return (
+            <Input
+              type="text"
+              value={issue[colKey]}
+              onChange={(e) => handleInputChange(e, rowIndex, colKey)}
+              onBlur={handleInputBlur}
+              autoFocus
+              className="w-full"
+            />
+          );
+          // Removed unnecessary else block
+        }
+        // Display newline characters correctly in non-editing mode for description
+        return colKey === "description" ? (
+          <pre className="whitespace-pre-wrap text-sm">
+            {issue[colKey] || "(empty)"}
+          </pre>
+        ) : (
+          issue[colKey] || "(empty)"
+        );
+      };
+
+      const displayedLabels =
+        selectedGitlabLabelIds
+          .map((labelId) => gitlabLabelMap.get(labelId))
+          .filter((labelName): labelName is string => !!labelName) // Filter out undefined/null and type guard
+          .join(", ") || "(none)";
+
+      return (
+        <TableRow key={issue.id}>
+          <TableCell
+            onClick={() => handleCellClick(rowIndex, "title")}
+            className="cursor-pointer hover:bg-muted/50"
+          >
+            {renderCellContent(issue, rowIndex, "title")}
+          </TableCell>
+          <TableCell
+            onClick={() => handleCellClick(rowIndex, "description")}
+            className="cursor-pointer hover:bg-muted/50"
+          >
+            {renderCellContent(issue, rowIndex, "description")}
+          </TableCell>
+          <TableCell className="text-xs text-muted-foreground">
+            <pre className="whitespace-pre-wrap">{issue.originalText}</pre>
+          </TableCell>
+          <TableCell>{displayedLabels}</TableCell>
+        </TableRow>
+      );
+    }
+  );
+  MemoizedTableRow.displayName = "MemoizedTableRow"; // Add display name for DevTools
+
+  // Removed the broken handleCellClick declaration block entirely.
+  // The correct one is defined above using useCallback.
+
+  // Removed original handleInputChange, handleInputBlur, renderCellContent as they are now inside MemoizedTableRow or handled by useCallback hooks
 
   return (
     <div className="space-y-2">
@@ -161,36 +261,17 @@ export function EditableIssueTable({
               </TableRow>
             ) : (
               editedIssues.map((issue, rowIndex) => (
-                <TableRow key={issue.id}>
-                  <TableCell
-                    onClick={() => handleCellClick(rowIndex, "title")}
-                    className="cursor-pointer hover:bg-muted/50"
-                  >
-                    {renderCellContent(issue, rowIndex, "title")}
-                  </TableCell>
-                  <TableCell
-                    onClick={() => handleCellClick(rowIndex, "description")}
-                    className="cursor-pointer hover:bg-muted/50"
-                  >
-                    {renderCellContent(issue, rowIndex, "description")}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    <pre className="whitespace-pre-wrap">
-                      {issue.originalText}
-                    </pre>
-                  </TableCell>
-                  <TableCell>
-                    {selectedGitlabLabelIds
-                      .map((labelId) => {
-                        const label = gitlabLabels.find(
-                          (label) => label.id === labelId
-                        );
-                        return label ? label.title : null;
-                      })
-                      .filter(Boolean) // Remove null values (labels not found)
-                      .join(", ") || "(none)"}
-                  </TableCell>
-                </TableRow>
+                <MemoizedTableRow
+                  key={issue.id} // Key should be on the actual component being mapped
+                  issue={issue}
+                  rowIndex={rowIndex}
+                  editingCell={editingCell}
+                  gitlabLabelMap={gitlabLabelMap}
+                  selectedGitlabLabelIds={selectedGitlabLabelIds}
+                  handleCellClick={handleCellClick}
+                  handleInputChange={handleInputChange}
+                  handleInputBlur={handleInputBlur}
+                />
               ))
             )}
           </TableBody>

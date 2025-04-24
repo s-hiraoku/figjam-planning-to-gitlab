@@ -1,11 +1,11 @@
 import React from "react";
 import { StickyNoteList } from "components/sticky-notes/sticky-note-list";
-import { FigmaStickyNote } from "types/figma";
+import type { FigmaStickyNote } from "types/figma";
 
 interface StickyNoteSelectionSectionProps {
   filteredNotes: FigmaStickyNote[];
-  selectedNotes: string[];
-  onSelectionChange: (selectedIds: string[]) => void;
+  selectedNotes: Set<string>;
+  onSelectionChange: (selectedIds: Set<string>) => void;
   isEditMode: boolean;
 }
 

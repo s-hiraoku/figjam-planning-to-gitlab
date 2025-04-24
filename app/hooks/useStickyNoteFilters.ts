@@ -132,7 +132,10 @@ export function useStickyNoteFilters(stickyNotes: FigmaStickyNote[]) {
       if (color) {
         hex = figmaColorToHex(color);
       }
-      if (selectedColors.length > 0 && !selectedColors.includes(hex)) {
+      if (
+        selectedColors.length > 0 &&
+        !selectedColors.map((c) => c.toLowerCase()).includes(hex.toLowerCase())
+      ) {
         return false;
       }
 

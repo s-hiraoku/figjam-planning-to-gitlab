@@ -9,6 +9,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useAtom } from "jotai";
+import { selectedNotesAtom, editedIssuesAtom } from "@/app/atoms/bridgeAtoms";
 
 // Import Hooks
 import { useFigmaData } from "@/app/hooks/useFigmaData";
@@ -24,10 +26,8 @@ import { GitLabConfigurationSection } from "@/app/components/bridge/GitLabConfig
 import type { EditableIssueData } from "@/app/components/bridge/EditableIssueTable"; // Import the editable issue type
 export default function BridgePage() {
   // --- State managed directly in the page ---
-  const [selectedNotes, setSelectedNotes] = useState<Set<string>>(new Set()); // IDs of selected notes
-  const [editedIssueData, setEditedIssueData] = useState<EditableIssueData[]>(
-    []
-  ); // State to hold data from the editable table
+  const [selectedNotes, setSelectedNotes] = useAtom(selectedNotesAtom);
+  const [editedIssueData, setEditedIssueData] = useAtom(editedIssuesAtom);
   const [showConfigSection, setShowConfigSection] = useState(false); // State to control visibility of section 3
   const [isEditMode, setIsEditMode] = useState(true); // State to control edit mode
   const [showReselectModal, setShowReselectModal] = useState(false); // State to control visibility of reselect confirmation modal
@@ -98,7 +98,8 @@ export default function BridgePage() {
         id: note.id,
         title: (note.text || "").split("\n")[0] || "Untitled Issue",
         description:
-          (note.text || "").substring((note.text || "").indexOf("\n") + 1) || "",
+          (note.text || "").substring((note.text || "").indexOf("\n") + 1) ||
+          "",
         originalText: note.text || "",
         labels: [],
         assignees: [],
@@ -147,7 +148,6 @@ export default function BridgePage() {
             {/* Sticky Notes List */}
             <StickyNoteSelectionSection
               filteredNotes={filteredNotes} // Pass filtered notes to list
-              selectedNotes={selectedNotes}
               onSelectionChange={handleSelectionChange}
               isEditMode={isEditMode}
             />

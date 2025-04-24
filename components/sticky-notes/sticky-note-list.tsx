@@ -1,6 +1,7 @@
-import React, { useRef, useCallback, useState, useEffect } from "react";
+import React, { memo } from "react";
 import { StickyNoteCard } from "./sticky-note-card";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox"; // Import Checkbox
 import type { FigmaStickyNote } from "types/figma";
 
 interface StickyNoteListProps {
@@ -10,7 +11,7 @@ interface StickyNoteListProps {
   disabled?: boolean;
 }
 
-export function StickyNoteList({
+export const StickyNoteList = memo(function StickyNoteList({
   notes,
   selectedNotes,
   onSelectionChange,
@@ -32,35 +33,45 @@ export function StickyNoteList({
     return notes.length > 0 && selectedNotes.size === notes.length;
   }, [notes.length, selectedNotes.size]);
 
-  // Local state to manage the checkbox checked status
-
-  // Ref to track if the change originated from the local checkbox handler
+  const isSomeSelected = React.useMemo(() => {
+    return selectedNotes.size > 0 && selectedNotes.size < notes.length;
+  }, [notes.length, selectedNotes.size]);
 
   return (
     <div className="space-y-4">
-      <button
-        type="button"
-        className={`flex items-center px-2 py-1 border rounded ${
-          isAllSelected ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-800"
-        } ${
-          notes.length === 0 || disabled ? "opacity-50 cursor-not-allowed" : ""
-        }`}
-        onClick={() => {
-          if (notes.length === 0 || disabled) return;
-          const nextSelection = isAllSelected
-            ? new Set<string>()
-            : new Set(
-                notes
-                  .map((note) => note.document?.id || note.id)
-                  .filter((id): id is string => id !== undefined)
-              );
-          onSelectionChange(nextSelection);
-        }}
-        disabled={notes.length === 0 || disabled}
-      >
-        {isAllSelected ? "Deselect All" : "Select All"} ({selectedNotes.size} /{" "}
-        {notes.length})
-      </button>
+      {/* Replace Button with Checkbox and Label */}
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="select-all-checkbox"
+          checked={
+            isAllSelected ? true : isSomeSelected ? "indeterminate" : false
+          }
+          onCheckedChange={(checked) => {
+            if (notes.length === 0 || disabled) return;
+            // If checked is true (meaning it was unchecked before click), select all.
+            // If checked is false (meaning it was checked or indeterminate before click), deselect all.
+            const nextSelection =
+              checked === true
+                ? new Set(
+                    notes
+                      .map((note) => note.document?.id || note.id)
+                      .filter((id): id is string => id !== undefined)
+                  )
+                : new Set<string>();
+            onSelectionChange(nextSelection);
+          }}
+          disabled={notes.length === 0 || disabled}
+          aria-label="Select all notes"
+        />
+        <Label
+          htmlFor="select-all-checkbox"
+          className={` ${
+            notes.length === 0 || disabled ? "text-muted-foreground" : ""
+          }`}
+        >
+          Select All ({selectedNotes.size} / {notes.length})
+        </Label>
+      </div>
 
       {notes.length === 0 ? (
         <p className="text-muted-foreground text-center py-4">
@@ -84,4 +95,4 @@ export function StickyNoteList({
       )}
     </div>
   );
-}
+});

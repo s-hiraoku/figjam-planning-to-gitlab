@@ -103,7 +103,7 @@ export function useStickyNoteFilters(stickyNotes: FigmaStickyNote[]) {
       return {
         label: label,
         value: hex, // Keep original hex casing for value if needed, though filtering uses lowercase
-        // color: hex, // Removed as it's redundant with value and not used downstream
+        color: hex, // Add color property for the swatch in MultiSelect
       };
     });
 

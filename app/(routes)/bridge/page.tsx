@@ -23,7 +23,6 @@ import { FigmaUrlSection } from "@/app/components/bridge/FigmaUrlSection";
 import { StickyNoteFilterSection } from "@/app/components/bridge/StickyNoteFilterSection";
 import { StickyNoteSelectionSection } from "@/app/components/bridge/StickyNoteSelectionSection";
 import { GitLabConfigurationSection } from "@/app/components/bridge/GitLabConfigurationSection";
-import type { EditableIssueData } from "@/app/components/bridge/EditableIssueTable"; // Import the editable issue type
 export default function BridgePage() {
   // --- State managed directly in the page ---
   const [selectedNotes, setSelectedNotes] = useAtom(selectedNotesAtom);
@@ -96,7 +95,7 @@ export default function BridgePage() {
       .filter((note) => selectedNotes.has(note.id))
       .map((note) => ({
         id: note.id,
-        title: (note.text || "").split("\n")[0] || "Untitled Issue",
+        title: (note.name || "").split("\n")[0] || "Untitled Issue",
         description:
           (note.text || "").substring((note.text || "").indexOf("\n") + 1) ||
           "",
@@ -170,21 +169,15 @@ export default function BridgePage() {
       {selectedNotes.size > 0 &&
         showConfigSection &&
         (() => {
-          // Find the actual sticky note objects corresponding to the selected IDs
-          const notesToRegister = filteredNotes.filter((note) =>
-            selectedNotes.has(note.id)
-          );
           return (
             <>
               <GitLabConfigurationSection
-                initialNotes={notesToRegister} // Pass the full note objects
                 onIssueDataChange={setEditedIssueData} // Pass the setter for edited data
                 gitlabLabels={gitlabLabels}
                 selectedGitlabLabelIds={selectedGitlabLabelIds}
                 onLabelChange={setSelectedGitlabLabelIds}
                 handleCreateIssues={handleCreateIssues} // This will now use editedIssueData via the hook
                 isCreatingIssues={isCreatingIssues}
-                // selectedNotesCount prop is removed
               />
               {/* Button to re-select sticky notes */}
               <div className="flex justify-end mt-4">

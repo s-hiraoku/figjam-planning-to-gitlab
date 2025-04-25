@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
 // FigmaStickyNote import is no longer needed here
-import { EditableIssueData } from "@/app/components/bridge/EditableIssueTable"; // Import the edited issue data type
+import { EditableIssueData } from "@/app/components/bridge/EditableIssueTable/EditableIssueTable"; // Import the edited issue data type
 
 // Re-define or import GitLabLabel type
 interface GitLabLabel {

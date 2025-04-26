@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
 // FigmaStickyNote import is no longer needed here
-import { EditableIssueData } from "@/app/components/bridge/EditableIssueTable"; // Import the edited issue data type
+import { EditableIssueData } from "@/app/components/bridge/EditableIssueTable/EditableIssueTable"; // Import the edited issue data type
 
 // Re-define or import GitLabLabel type
 interface GitLabLabel {
@@ -30,7 +30,6 @@ export function useGitLabIntegration(
         throw new Error("Failed to fetch GitLab labels");
       }
       const data = await res.json();
-      console.log("🚀 ~ fetchGitlabLabels ~ data:", data);
       setGitlabLabels(data.labels || []);
     } catch (error) {
       console.error("Error fetching GitLab labels:", error);
@@ -77,7 +76,7 @@ export function useGitLabIntegration(
           },
           body: JSON.stringify({
             title: title, // Use edited title
-            description: `${description}\n\n---\n_Imported from FigJam: [${issue.originalText.substring(
+            description: `${description}\n\n---\n_Imported from FigJam: [${title.substring(
               0,
               30
             )}...](https://www.figma.com/file/${fileKey}?node-id=${noteId})_`, // Use edited description + link

@@ -11,7 +11,27 @@ const getGitlabApiUrl = () => {
 interface CreateIssueRequestBody {
   title: string;
   description: string;
-  labels?: string[]; // Array of label titles
+  labelIds?: string[]; // Array of label IDs (GitLab uses GIDs like "gid://gitlab/Label/123")
+}
+
+// Define expected GraphQL response structure
+interface GitLabIssue {
+  id: string;
+  iid: string;
+  title: string;
+  webUrl: string;
+}
+
+interface CreateIssueMutationResult {
+  issue: GitLabIssue | null;
+  errors: string[] | Record<string, unknown>[] | null; // Allow unknown for object errors
+}
+
+interface GitLabGraphQLResponse {
+  data?: {
+    createIssue?: CreateIssueMutationResult;
+  };
+  errors?: string[] | Record<string, unknown>[] | null; // Allow unknown for object errors
 }
 
 const CREATE_ISSUE_MUTATION = `
@@ -56,7 +76,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { title, description } = requestBody;
+  const { title, description, labelIds } = requestBody; // Extract labelIds
 
   if (!title) {
     return NextResponse.json(
@@ -74,7 +94,7 @@ export async function POST(request: Request) {
         projectPath: projectPath,
         title: title,
         description: description || "", // Ensure description is a string
-        labelIds: [], // ラベル未対応の場合は空配列
+        labelIds: labelIds || [], // Use the received labelIds, default to empty array if undefined
       },
     };
     console.log("GitLab GraphQL payload:", JSON.stringify(payload, null, 2));
@@ -89,9 +109,9 @@ export async function POST(request: Request) {
     });
 
     const rawText = await response.text();
-    let data;
+    let data: GitLabGraphQLResponse | null = null; // Use the specific type
     try {
-      data = JSON.parse(rawText);
+      data = JSON.parse(rawText) as GitLabGraphQLResponse; // Assert type after parsing
     } catch {
       data = null;
     }
@@ -113,7 +133,12 @@ export async function POST(request: Request) {
       );
     }
 
-    if (data?.errors || data?.data?.createIssue?.errors?.length > 0) {
+    if (
+      data?.errors ||
+      (data?.data?.createIssue?.errors &&
+        data.data.createIssue.errors.length > 0)
+    ) {
+      // Check errors exist before length
       const errors = data?.errors || data?.data?.createIssue?.errors;
       console.error("GitLab GraphQL Errors creating issue:", errors);
       return NextResponse.json(

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FigmaStickyNote } from "types/figma";
@@ -26,12 +26,12 @@ const figmaColorToHex = (color?: {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 };
 
-export function StickyNoteCard({
+const StickyNoteCardComponent = ({
   note,
   isSelected,
   onSelectToggle,
   disabled,
-}: StickyNoteCardProps) {
+}: StickyNoteCardProps) => {
   const noteText =
     note.document?.characters ||
     note.document?.name ||
@@ -78,4 +78,6 @@ export function StickyNoteCard({
       </CardContent>
     </Card>
   );
-}
+};
+
+export const StickyNoteCard = memo(StickyNoteCardComponent);
